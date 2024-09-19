@@ -6,6 +6,5 @@ version = "0.1.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
-path = "Source/lib.rs"
 
 [dependencies]
