@@ -11,11 +11,7 @@ use structopt::StructOpt;
 use tracing::info;
 
 use self::base::BasePublishCommand;
-use crate::util::{
-	cargo::get_all_crates,
-	node::publish_tarball_to_npm,
-	AHashMap,
-};
+use crate::util::{cargo::get_all_crates, node::publish_tarball_to_npm, AHashMap};
 
 mod base;
 
@@ -43,13 +39,11 @@ impl PublishDepsCommand {
 
 		let crates = get_all_crates()?
 			.into_iter()
-			.filter(|(name, _)| {
-				enabled_crates.is_empty() || enabled_crates.contains(&name)
-			})
+			.filter(|(name, _)| enabled_crates.is_empty() || enabled_crates.contains(&name))
 			.collect::<AHashMap<_, _>>();
 
-		let all_pkg_platforms = get_swc_pkg_files(&artifacts_dir)
-			.context("failed to get swc package files")?;
+		let all_pkg_platforms =
+			get_swc_pkg_files(&artifacts_dir).context("failed to get swc package files")?;
 
 		info!("Using {:?}", all_pkg_platforms);
 
@@ -62,24 +56,16 @@ impl PublishDepsCommand {
 			);
 
 			let base_package_json_str = read_to_string(&base_package_json_path)
-				.context(format!(
-					"failed to read `{}`",
-					base_package_json_path.display()
-				))?;
+				.context(format!("failed to read `{}`", base_package_json_path.display()))?;
 
-			let mut base_package_json =
-				Value::from_str(&base_package_json_str)?;
+			let mut base_package_json = Value::from_str(&base_package_json_str)?;
 			if !base_package_json.is_object() {
 				bail!("package.json is not an object")
 			}
 
-			let pkg_platforms =
-				all_pkg_platforms.get(&crate_name).with_context(|| {
-					format!(
-						"failed to get package files for crate `{}`",
-						crate_name
-					)
-				})?;
+			let pkg_platforms = all_pkg_platforms.get(&crate_name).with_context(|| {
+				format!("failed to get package files for crate `{}`", crate_name)
+			})?;
 
 			{
 				let pkg_json_obj = base_package_json.as_object_mut().unwrap();
@@ -91,48 +77,27 @@ impl PublishDepsCommand {
 					);
 				}
 
-				let pkg_name = pkg_json_obj
-					.get("name")
-					.unwrap()
-					.as_str()
-					.unwrap()
-					.to_string();
-				let pkg_version = pkg_json_obj
-					.get("version")
-					.unwrap()
-					.as_str()
-					.unwrap()
-					.to_string();
+				let pkg_name = pkg_json_obj.get("name").unwrap().as_str().unwrap().to_string();
+				let pkg_version =
+					pkg_json_obj.get("version").unwrap().as_str().unwrap().to_string();
 
-				let opt_deps = pkg_json_obj
-					.get_mut("optionalDependencies")
-					.unwrap()
-					.as_object_mut()
-					.unwrap();
+				let opt_deps =
+					pkg_json_obj.get_mut("optionalDependencies").unwrap().as_object_mut().unwrap();
 
 				for platform in pkg_platforms.iter() {
 					let dep_name = format!("{}-{}", pkg_name, platform);
 					if !opt_deps.contains_key(&dep_name) {
-						opt_deps.insert(
-							dep_name,
-							Value::String(pkg_version.clone()),
-						);
+						opt_deps.insert(dep_name, Value::String(pkg_version.clone()));
 					}
 				}
 			}
-			let pkg_json_str =
-				serde_json::to_string_pretty(&base_package_json)?;
+			let pkg_json_str = serde_json::to_string_pretty(&base_package_json)?;
 
-			fs::write(&base_package_json_path, &pkg_json_str).context(
-				format!(
-					"failed to write to `{}`",
-					base_package_json_path.display()
-				),
-			)?;
+			fs::write(&base_package_json_path, &pkg_json_str)
+				.context(format!("failed to write to `{}`", base_package_json_path.display()))?;
 
 			for platform in pkg_platforms.iter() {
-				let platform_pkg_filename =
-					format!("{}.{}.swc-pkg.tgz", crate_name, platform);
+				let platform_pkg_filename = format!("{}.{}.swc-pkg.tgz", crate_name, platform);
 
 				publish_tarball_to_npm(
 					&artifacts_dir.join(&platform_pkg_filename),
@@ -140,8 +105,7 @@ impl PublishDepsCommand {
 				)
 				.with_context(|| {
 					format!(
-						"failed to publish platform package for `{}` (target \
-						 = {})",
+						"failed to publish platform package for `{}` (target = {})",
 						crate_name, platform
 					)
 				})?;
@@ -153,9 +117,7 @@ impl PublishDepsCommand {
 }
 
 /// Key is crate name and values are platforms
-fn get_swc_pkg_files(
-	artifacts_dir:&Path,
-) -> Result<AHashMap<String, Vec<String>>> {
+fn get_swc_pkg_files(artifacts_dir:&Path) -> Result<AHashMap<String, Vec<String>>> {
 	let entries = read_dir(&artifacts_dir)?;
 
 	let mut buf = AHashMap::<_, Vec<_>>::default();
@@ -170,8 +132,7 @@ fn get_swc_pkg_files(
 			assert_eq!(
 				file_name.split('.').count(),
 				4,
-				"The plugin artifact should be named \
-				 `<crate_name>.<platform_name>.swc-pkg.tgz`"
+				"The plugin artifact should be named `<crate_name>.<platform_name>.swc-pkg.tgz`"
 			);
 			let crate_name = file_name.split('.').next().unwrap().to_string();
 			let platform = file_name.split('.').nth(1).unwrap().to_string();

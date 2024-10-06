@@ -90,8 +90,8 @@ impl BaseCargoBuildCommand {
 					// We didn't build it.
 					if kinds.len() == 1 {
 						if kinds[0] == "lib"
-							|| kinds[0] == "proc-macro" || artifact.target.name
-							== "build-script-build"
+							|| kinds[0] == "proc-macro"
+							|| artifact.target.name == "build-script-build"
 						{
 							continue;
 						}

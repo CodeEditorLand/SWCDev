@@ -1,10 +1,4 @@
-use std::{
-	collections::HashMap,
-	env,
-	fmt::Display,
-	path::PathBuf,
-	sync::RwLock,
-};
+use std::{collections::HashMap, env, fmt::Display, path::PathBuf, sync::RwLock};
 
 use anyhow::{anyhow, Error};
 use once_cell::sync::Lazy;
@@ -16,8 +10,7 @@ pub type AHashMap<K, V> = HashMap<K, V, ahash::RandomState>;
 
 // pub type AHashSet<V> = HashSet<V, ahash::RandomState>;
 
-pub(crate) trait CargoEditResultExt<T>:
-	Into<cargo_edit::Result<T>> {
+pub(crate) trait CargoEditResultExt<T>: Into<cargo_edit::Result<T>> {
 	fn map_err_op(self, op:impl Display) -> Result<T, Error> {
 		self.into().map_err(|err| anyhow!("failed to {}: {:?}", op, err))
 	}
@@ -26,8 +19,7 @@ pub(crate) trait CargoEditResultExt<T>:
 impl<T> CargoEditResultExt<T> for cargo_edit::Result<T> {}
 
 pub(crate) fn find_executable(name:&str) -> Option<PathBuf> {
-	static CACHE:Lazy<RwLock<HashMap<String, PathBuf>>> =
-		Lazy::new(|| Default::default());
+	static CACHE:Lazy<RwLock<HashMap<String, PathBuf>>> = Lazy::new(|| Default::default());
 
 	{
 		let locked = CACHE.read().unwrap();

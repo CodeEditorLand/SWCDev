@@ -10,16 +10,10 @@ use cargo_metadata::MetadataCommand;
 pub mod add;
 pub mod upgrade;
 
-pub fn cargo_metadata(
-	mut cmd:MetadataCommand,
-	from:&Path,
-) -> Result<cargo_metadata::Metadata> {
+pub fn cargo_metadata(mut cmd:MetadataCommand, from:&Path) -> Result<cargo_metadata::Metadata> {
 	let from = from.to_path_buf();
 
-	let result = cmd
-		.current_dir(&from)
-		.exec()
-		.context("failed to execute `cargo metadata`")?;
+	let result = cmd.current_dir(&from).exec().context("failed to execute `cargo metadata`")?;
 
 	Ok(result)
 }
@@ -43,12 +37,8 @@ pub fn get_all_crates() -> Result<Vec<(String, PathBuf)>> {
 					return None;
 				}
 
-				let manifest_dir = p
-					.manifest_path
-					.parent()
-					.unwrap()
-					.to_path_buf()
-					.into_std_path_buf();
+				let manifest_dir =
+					p.manifest_path.parent().unwrap().to_path_buf().into_std_path_buf();
 				Some((p.name, manifest_dir))
 			})
 			.collect())
@@ -98,8 +88,8 @@ pub fn get_default_cargo_target() -> Result<String> {
 		.arg("-vV")
 		.output()
 		.context("Failed to run rustc to get the host target")?;
-	let output = String::from_utf8(output.stdout)
-		.context("`rustc -vV` didn't return utf8 output")?;
+	let output =
+		String::from_utf8(output.stdout).context("`rustc -vV` didn't return utf8 output")?;
 
 	let field = "host: ";
 	let host = output
@@ -107,11 +97,7 @@ pub fn get_default_cargo_target() -> Result<String> {
 		.find(|l| l.starts_with(field))
 		.map(|l| &l[field.len()..])
 		.ok_or_else(|| {
-			anyhow!(
-				"`rustc -vV` didn't have a line for `{}`, got:\n{}",
-				field.trim(),
-				output
-			)
+			anyhow!("`rustc -vV` didn't have a line for `{}`, got:\n{}", field.trim(), output)
 		})?
 		.to_string();
 	Ok(host)

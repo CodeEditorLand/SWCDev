@@ -14,10 +14,8 @@ impl InitCommand {
 		let mut c = Command::new("cargo");
 		c.arg("init").stderr(Stdio::inherit());
 
-		let status = c
-			.arg("--lib")
-			.status()
-			.with_context(|| format!("failed to run `cargo init`"))?;
+		let status =
+			c.arg("--lib").status().with_context(|| format!("failed to run `cargo init`"))?;
 
 		if !status.success() {
 			bail!("failed to initialize a cargo project")

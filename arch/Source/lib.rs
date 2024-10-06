@@ -83,9 +83,9 @@ impl NodePlatform {
 			"windows" => Ok(NodePlatform::Windows),
 
 			_ => {
-				s.parse().ok().ok_or_else(|| {
-					anyhow::anyhow!("failed to parse `{}` as NodePlatform", s)
-				})
+				s.parse()
+					.ok()
+					.ok_or_else(|| anyhow::anyhow!("failed to parse `{}` as NodePlatform", s))
 			},
 		}
 	}
@@ -95,9 +95,7 @@ impl NodePlatform {
 	/// This include a leading dot.
 	pub fn cdylib_ext(self) -> &'static str {
 		match self {
-			NodePlatform::Android
-			| NodePlatform::Linux
-			| NodePlatform::Freebsd => ".so",
+			NodePlatform::Android | NodePlatform::Linux | NodePlatform::Freebsd => ".so",
 			NodePlatform::Darwin => ".dylib",
 			NodePlatform::Windows => ".dll",
 		}
@@ -125,26 +123,10 @@ impl FromStr for PlatformDetail {
 
 			let (platform, arch, abi) = match &*triples {
 				[cpu, _, sys, abi] => {
-					(
-						NodePlatform::from_sys(sys)?,
-						NodeArch::from_cpu(cpu)?,
-						Some(abi.to_string()),
-					)
+					(NodePlatform::from_sys(sys)?, NodeArch::from_cpu(cpu)?, Some(abi.to_string()))
 				},
-				[cpu, _, sys] => {
-					(
-						NodePlatform::from_sys(sys)?,
-						NodeArch::from_cpu(cpu)?,
-						None,
-					)
-				},
-				[cpu, sys, ..] => {
-					(
-						NodePlatform::from_sys(sys)?,
-						NodeArch::from_cpu(cpu)?,
-						None,
-					)
-				},
+				[cpu, _, sys] => (NodePlatform::from_sys(sys)?, NodeArch::from_cpu(cpu)?, None),
+				[cpu, sys, ..] => (NodePlatform::from_sys(sys)?, NodeArch::from_cpu(cpu)?, None),
 				_ => {
 					bail!("invalid format")
 				},
@@ -156,17 +138,9 @@ impl FromStr for PlatformDetail {
 				format!("{}-{}", platform, arch)
 			};
 
-			Ok(PlatformDetail {
-				platform,
-				platform_arch_abi,
-				arch,
-				raw:raw.to_string(),
-				abi,
-			})
+			Ok(PlatformDetail { platform, platform_arch_abi, arch, raw:raw.to_string(), abi })
 		})()
-		.with_context(|| {
-			format!("failed to parse `{}` as platform detail", raw)
-		})
+		.with_context(|| format!("failed to parse `{}` as platform detail", raw))
 	}
 }
 

@@ -40,10 +40,7 @@ impl PackageCommand {
 		let crate_names = self.crates.clone();
 
 		let crate_names = if crate_names.is_empty() {
-			info!(
-				"Using all crates in the workspace because `--crates` is not \
-				 used"
-			);
+			info!("Using all crates in the workspace because `--crates` is not used");
 			get_all_crates()?.into_iter().map(|c| c.0).collect()
 		} else {
 			crate_names
@@ -65,13 +62,8 @@ impl PackageCommand {
 				let build_dir = build_dir.clone();
 				let pkgs_dir = pkgs_dir.clone();
 				crate_names.par_iter().map(move |crate_name| {
-					create_package_for_platform(
-						&pkgs_dir,
-						&build_dir,
-						&crate_name,
-						&platform,
-					)
-					.context("failed to create a package for platform")
+					create_package_for_platform(&pkgs_dir, &build_dir, &crate_name, &platform)
+						.context("failed to create a package for platform")
 				})
 			})
 			.collect::<Vec<_>>();
@@ -106,27 +98,19 @@ pub(super) fn create_package_for_platform(
 	info!("Creating a package for a platform");
 
 	let pkg_dir = pkgs_dir.join(format!("{}-{}", crate_name, platform));
-	let built_bin_path = build_dir.join(format!(
-		"{}.{}{}",
-		crate_name,
-		platform,
-		platform.platform.cdylib_ext()
-	));
+	let built_bin_path =
+		build_dir.join(format!("{}.{}{}", crate_name, platform, platform.platform.cdylib_ext()));
 
 	create_dir_all(&pkg_dir).with_context(|| {
 		format!(
-			"failed to create `{}` which is required to create a binary \
-			 package for `{}`",
+			"failed to create `{}` which is required to create a binary package for `{}`",
 			pkg_dir.display(),
 			platform
 		)
 	})?;
 
 	if !built_bin_path.is_file() {
-		bail!(
-			"failed to find built dynamic library from `{}`",
-			built_bin_path.display()
-		)
+		bail!("failed to find built dynamic library from `{}`", built_bin_path.display())
 	}
 	debug!("Using the dynamic library at `{}`", built_bin_path.display());
 	let dylib_filename = format!("lib{}", platform.platform.cdylib_ext());
@@ -157,8 +141,8 @@ pub(super) fn create_package_for_platform(
 	let mut bin_pkg_json:PackageJsonForBin =
 		serde_json::from_str(&package_json_str).with_context(|| {
 			format!(
-				"failed to create the package.json file for platform package \
-				 from the main package.json file at {}",
+				"failed to create the package.json file for platform package from the main \
+				 package.json file at {}",
 				package_json_path.display()
 			)
 		})?;
@@ -166,8 +150,7 @@ pub(super) fn create_package_for_platform(
 
 	bin_pkg_json.name = format!("{}-{}", bin_pkg_json.name, platform);
 	bin_pkg_json.description = format!(
-		"This package is part of {}. This package will be installed only for \
-		 `{}`.",
+		"This package is part of {}. This package will be installed only for `{}`.",
 		main_name, platform
 	);
 
@@ -182,14 +165,10 @@ pub(super) fn create_package_for_platform(
 	// };
 
 	let bin_json_path = pkg_dir.join("package.json");
-	let bin_pkg_json = serde_json::to_string_pretty(&bin_pkg_json).context(
-		"failed to serialize package.json file for the binary package",
-	)?;
+	let bin_pkg_json = serde_json::to_string_pretty(&bin_pkg_json)
+		.context("failed to serialize package.json file for the binary package")?;
 	write(&bin_json_path, &bin_pkg_json).with_context(|| {
-		format!(
-			"failed to write package.json file to `{}`",
-			bin_json_path.display()
-		)
+		format!("failed to write package.json file to `{}`", bin_json_path.display())
 	})?;
 
 	Ok(pkg_dir)

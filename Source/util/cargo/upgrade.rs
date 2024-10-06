@@ -5,13 +5,7 @@ use std::{
 };
 
 use anyhow::{anyhow, Context, Error};
-use cargo_edit::{
-	find,
-	get_latest_dependency,
-	CrateName,
-	Dependency,
-	LocalManifest,
-};
+use cargo_edit::{find, get_latest_dependency, CrateName, Dependency, LocalManifest};
 use url::Url;
 
 use crate::util::{cargo::cargo_metadata, CargoEditResultExt};
@@ -33,8 +27,7 @@ fn is_version_dep(dependency:&cargo_metadata::Dependency) -> bool {
 impl Manifests {
 	/// Get all manifests in the workspace.
 	fn get_all(manifest_path:&Option<PathBuf>) -> Result<Self, Error> {
-		let cur_dir =
-			env::current_dir().context("failed to get current directory")?;
+		let cur_dir = env::current_dir().context("failed to get current directory")?;
 
 		let mut cmd = cargo_metadata::MetadataCommand::new();
 		cmd.no_deps();
@@ -60,8 +53,7 @@ impl Manifests {
 	/// Get the manifest specified by the manifest path. Try to make an educated
 	/// guess if no path is provided.
 	fn get_local_one(manifest_path:&Option<PathBuf>) -> Result<Self, Error> {
-		let cur_dir =
-			env::current_dir().context("failed to get current directory")?;
+		let cur_dir = env::current_dir().context("failed to get current directory")?;
 
 		let resolved_manifest_path:String = find(manifest_path)
 			.map_err_op("invoke cargo_edit::find")?
@@ -108,10 +100,7 @@ impl Manifests {
 					.parse_as_version()
 					.map_err_op("parse the version of dependency")?
 				{
-					Ok((
-						dependency.name.clone(),
-						dependency.version().map(String::from),
-					))
+					Ok((dependency.name.clone(), dependency.version().map(String::from)))
 				} else {
 					Ok((name, None))
 				}
@@ -180,8 +169,7 @@ impl Manifests {
 			println!("{}:", package.name);
 
 			for (dep, version) in &upgraded_deps.0 {
-				let mut new_dep =
-					Dependency::new(&dep.name).set_version(version);
+				let mut new_dep = Dependency::new(&dep.name).set_version(version);
 				if let Some(rename) = dep.rename() {
 					new_dep = new_dep.set_rename(rename);
 				}
@@ -219,48 +207,30 @@ impl DesiredUpgrades {
 	) -> Result<ActualUpgrades, Error> {
 		self.0
 			.into_iter()
-			.map(
-				|(
-					dep,
-					UpgradeMetadata { registry, version, is_prerelease },
-				)| {
-					let name = dep.name.clone();
+			.map(|(dep, UpgradeMetadata { registry, version, is_prerelease })| {
+				let name = dep.name.clone();
 
-					if let Some(v) = version {
-						Ok((dep, v))
-					} else {
-						let registry_url = match registry {
-							Some(x) => {
-								Some(Url::parse(&x).map_err(|err| {
-									anyhow!("invalid cargo config: {}", err)
-								})?)
-							},
-							None => None,
-						};
-						let allow_prerelease =
-							allow_prerelease || is_prerelease;
-						get_latest_dependency(
-							&dep.name,
-							allow_prerelease,
-							manifest_path,
-							&registry_url,
-						)
-						.map(|new_dep| {
-							(
-								dep,
-								new_dep
-									.version()
-									.expect("Invalid dependency type")
-									.to_string(),
+				if let Some(v) = version {
+					Ok((dep, v))
+				} else {
+					let registry_url = match registry {
+						Some(x) => {
+							Some(
+								Url::parse(&x)
+									.map_err(|err| anyhow!("invalid cargo config: {}", err))?,
 							)
+						},
+						None => None,
+					};
+					let allow_prerelease = allow_prerelease || is_prerelease;
+					get_latest_dependency(&dep.name, allow_prerelease, manifest_path, &registry_url)
+						.map(|new_dep| {
+							(dep, new_dep.version().expect("Invalid dependency type").to_string())
 						})
 						.map_err_op("invoke cargo_edit::get_latest_dependency")
-						.with_context(|| {
-							format!("failed to get new version of {}", name)
-						})
-					}
-				},
-			)
+						.with_context(|| format!("failed to get new version of {}", name))
+				}
+			})
 			.collect::<Result<_, _>>()
 			.map(ActualUpgrades)
 	}
@@ -282,10 +252,8 @@ pub fn upgrade_dep(crate_name:&str, workspace:bool) -> Result<(), Error> {
 	let existing_dependencies =
 		manifests.get_dependencies(Default::default(), Default::default())?;
 
-	let upgraded_dependencies = existing_dependencies.get_upgraded(
-		false,
-		&find(&None).map_err_op("invoke cargo_edit::find")?,
-	)?;
+	let upgraded_dependencies = existing_dependencies
+		.get_upgraded(false, &find(&None).map_err_op("invoke cargo_edit::find")?)?;
 
 	manifests
 		.upgrade(&upgraded_dependencies, false, false)

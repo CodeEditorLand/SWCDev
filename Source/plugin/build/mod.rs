@@ -38,8 +38,7 @@ impl BuildCommand {
 			Some(v) => v,
 			None => get_default_cargo_target()?,
 		};
-		let p:PlatformDetail =
-			platform.parse().context("failed to parse platform")?;
+		let p:PlatformDetail = platform.parse().context("failed to parse platform")?;
 
 		let libs = self.cargo.run()?;
 
@@ -50,10 +49,7 @@ impl BuildCommand {
 		let results = libs
 			.par_iter()
 			.map(|lib| -> Result<_, Error> {
-				let cdylib_ext = lib
-					.cdylib_path
-					.extension()
-					.expect("cdylib should have extension");
+				let cdylib_ext = lib.cdylib_path.extension().expect("cdylib should have extension");
 				let name = format!(
 					"{}.{}.{}",
 					lib.crate_name,
@@ -62,21 +58,15 @@ impl BuildCommand {
 				);
 				let copied_path = build_dir.join(&name);
 
-				copy(&lib.cdylib_path, &copied_path)
-					.context("failed to copy file")?;
+				copy(&lib.cdylib_path, &copied_path).context("failed to copy file")?;
 
-				debug!(
-					"Copying {} to {}",
-					lib.cdylib_path.display(),
-					copied_path.display()
-				);
+				debug!("Copying {} to {}", lib.cdylib_path.display(), copied_path.display());
 
 				Ok(())
 			})
 			.collect::<Vec<_>>();
 
-		let crate_names =
-			libs.iter().map(|l| l.crate_name.clone()).collect::<IndexSet<_>>();
+		let crate_names = libs.iter().map(|l| l.crate_name.clone()).collect::<IndexSet<_>>();
 		let mut error = false;
 		for result in results {
 			match result {
@@ -93,8 +83,7 @@ impl BuildCommand {
 
 		info!("Built files are copied to {}", build_dir.display());
 
-		let cur_dir =
-			current_dir().context("failed to get current directory")?;
+		let cur_dir = current_dir().context("failed to get current directory")?;
 
 		if self.package {
 			for crate_name in crate_names.iter() {
@@ -106,18 +95,15 @@ impl BuildCommand {
 				)
 				.context("failed to create package for the built platform")?;
 
-				let pkg_file = create_npm_package(&pkg_dir)
-					.context("failed to create npm package")?;
+				let pkg_file =
+					create_npm_package(&pkg_dir).context("failed to create npm package")?;
 
 				info!("Created package file at `{}`", pkg_file.display());
 
 				let ext = pkg_file
 					.extension()
 					.ok_or_else(|| {
-						anyhow!(
-							"package file built by `npm pack` should have \
-							 filename"
-						)
+						anyhow!("package file built by `npm pack` should have filename")
 					})?
 					.to_string_lossy();
 				let filename = format!("{}.{}.swc-pkg.{}", crate_name, p, ext);
